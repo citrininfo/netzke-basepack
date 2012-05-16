@@ -211,7 +211,7 @@ module Netzke
             if !config[:"prohibit_#{operation}"]
               modified_records = 0
               data.each do |record_hash|
-                id = record_hash.delete('id')
+                id = record_hash.delete(data_class.primary_key)
                 record = operation == :create ? data_adapter.new_record : data_adapter.find_record(id)
                 success = true
 
