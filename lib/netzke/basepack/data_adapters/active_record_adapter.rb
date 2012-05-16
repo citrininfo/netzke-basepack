@@ -130,7 +130,7 @@ module Netzke::Basepack::DataAdapters
     end
 
     def find_record(id)
-      @model_class.find(:first, id)
+      @model_class.find(id)
     end
 
     # Build a hash of foreign keys and the associated model
