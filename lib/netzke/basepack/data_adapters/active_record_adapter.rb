@@ -8,12 +8,6 @@ module Netzke::Basepack::DataAdapters
       # build initial relation based on passed params
       relation = get_relation(params)
 
-      # addressing the n+1 query problem
-      columns.each do |c|
-        assoc, method = c[:name].split('__')
-        relation = relation.includes(assoc.to_sym) if method
-      end
-
       # apply sorting if needed
       if params[:sort] && sort_params = params[:sort].first
         assoc, method = sort_params["property"].split('__')
@@ -25,13 +19,20 @@ module Netzke::Basepack::DataAdapters
           relation = relation.send(column[:sorting_scope].to_sym, dir.to_sym)
         else
           relation = if method.nil?
-            relation.order("#{assoc} #{dir}")
-          else
-            assoc = @model_class.reflect_on_association(assoc.to_sym)
-            relation.joins(assoc.name).order("#{assoc.klass.table_name}.#{method} #{dir}")
-          end
+                       relation.order("#{assoc} #{dir}")
+                     else
+                       assoc = @model_class.reflect_on_association(assoc.to_sym)
+                       relation.joins(assoc.name).order("#{assoc.klass.table_name}.#{method} #{dir}")
+                     end
+        end
+      else
+        # addressing the n+1 query problem
+        columns.each do |c|
+          assoc, method = c[:name].split('__')
+          relation = relation.includes(assoc.to_sym) if method
         end
       end
+
 
       page = params[:limit] ? params[:start].to_i/params[:limit].to_i + 1 : 1
       if params[:limit]
@@ -39,6 +40,19 @@ module Netzke::Basepack::DataAdapters
       else
         relation.all
       end
+      # addressing the n+1 query problem with sort joins
+      if params[:sort] && params[:sort].first
+        @model_class.instance_eval do
+          def load_assocs(rel, assocs)
+            preload_associations(rel, assocs)
+          end
+        end
+        columns.each{ |c|
+          assoc, method = c[:name].split('__')
+          @model_class.load_assocs(relation, assoc.to_sym) if method
+        }
+      end
+      relation
     end
 
     def count_records(params, columns=[])
