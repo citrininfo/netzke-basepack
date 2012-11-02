@@ -42,14 +42,9 @@ module Netzke::Basepack::DataAdapters
       end
       # addressing the n+1 query problem with sort joins
       if params[:sort] && params[:sort].first
-        @model_class.instance_eval do
-          def load_assocs(rel, assocs)
-            preload_associations(rel, assocs)
-          end
-        end
         columns.each{ |c|
           assoc, method = c[:name].split('__')
-          @model_class.load_assocs(relation, assoc.to_sym) if method
+          ActiveRecord::Associations::Preloader.new(relation, assoc.to_sym).run if method
         }
       end
       relation
