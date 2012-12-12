@@ -46,7 +46,7 @@ When /^I enable filter on column "([^"]*)" with value "([^"]*)"$/ do |column, va
   page.driver.browser.execute_script <<-JS
     var grid = Ext.ComponentQuery.query('gridpanel')[0],
         filter;
-    grid.features[0].createFilters();
+    grid.filters.createFilters();
     filter = grid.filters.getFilter('#{column}');
     filter.setValue(#{value});
     filter.setActive(true);
@@ -60,7 +60,7 @@ When /^I enable date filter on column "([^"]*)" with value "([^"]*)"$/ do |colum
   page.driver.browser.execute_script <<-JS
     var grid = Ext.ComponentQuery.query('gridpanel')[0],
         filter, value;
-    grid.features[0].createFilters();
+    grid.filters.createFilters();
     filter = grid.filters.getFilter('#{column}');
     value = filter.getValue();
     value.#{operand} = new Date('#{date}'); // merge the new value with the current one
@@ -127,7 +127,7 @@ When /^I (?:drag|move) "([^"]*)" column before "([^"]*)"$/ do |header1, header2|
     cmp = Ext.ComponentQuery.query('gridpanel')[0];
     cmp.onColumnMove(null, null, #{indexi[0]}, #{indexi[1]});
   JS
-  When "I wait for the response from the server"
+  step "I wait for the response from the server"
 end
 
 Then /^I should see columns in order: "([^"]*)", "([^"]*)", "([^"]*)"$/ do |header1, header2, header3|
@@ -157,7 +157,7 @@ Then /^the grid should have records sorted by "([^"]*)"\s?(asc|desc)?$/ do |colu
         columnValues = [];
 
     grid.getStore().each(function(r){
-      var value = column.assoc ? r.get('_meta').associationValues[fieldName] : r.get(fieldName);
+      var value = column.assoc ? r.get('meta').associationValues[fieldName] : r.get(fieldName);
       if (value) columnValues.#{dir == "asc" ? "push" : "unshift"}(value);
     });
 

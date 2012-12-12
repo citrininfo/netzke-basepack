@@ -117,7 +117,7 @@ module Netzke
                   candidates = %w{name title label} << foreign_key_for_assoc(assoc)
                   assoc_method = candidates.detect{|m| (assoc.klass.instance_methods.map(&:to_s) + assoc.klass.column_names).include?(m) }
                   c[:name] = "#{assoc.name}__#{assoc_method}"
-                  c[:attr_type] = assoc.klass.columns_hash[assoc_method].try(:type) || :string # when it's an instance method rather than a column, fall back to :string
+                  c[:attr_type] = :integer # when it's an instance method rather than a column, fall back to :string
                 end
 
                 # auto set up the default value from the column settings
@@ -231,7 +231,10 @@ module Netzke
                     # what should we do in this case?
                   end
                 else
-                  self.send("#{assoc.options[:foreign_key] || assoc.name.to_s.foreign_key}=", v)
+
+                  # set the foreign key to the passed value
+                  # not that if a negative value is passed, we reset the association (set it to nil)
+                  self.send("#{assoc.foreign_key}=", v.to_i < 0 ? nil : v)
                 end
               else
                 logger.debug "Netzke::Basepack: Association #{assoc} is not known for class #{self.class.name}"

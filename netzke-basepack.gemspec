@@ -5,13 +5,13 @@
 
 Gem::Specification.new do |s|
   s.name = "netzke-basepack"
-  s.version = "0.7.4"
+  s.version = "0.7.7"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = ["Sergei Kozlov"]
-  s.date = "2012-04-22"
-  s.description = "A set of full-featured extendible Netzke components (such as FormPanel, GridPanel, Window, BorderLayoutPanel, etc) which can be used as building block for your RIA"
-  s.email = "sergei@playcode.nl"
+  s.authors = ["nomadcoder"]
+  s.date = "2012-10-20"
+  s.description = "A set of full-featured extendible Netzke components (such as FormPanel, GridPanel, Window, etc) which can be used as building block for your RIA"
+  s.email = "nmcoder@gmail.com"
   s.extra_rdoc_files = [
     "LICENSE",
     "README.md"
@@ -100,6 +100,7 @@ Gem::Specification.new do |s|
     "lib/tasks/netzke_basepack_tasks.rake",
     "locales/de.yml",
     "locales/en.yml",
+    "locales/zh-cn.yml",
     "netzke-basepack.gemspec",
     "stylesheets/basepack.css",
     "stylesheets/datetimefield.css",
@@ -122,6 +123,7 @@ Gem::Specification.new do |s|
     "test/basepack_test_app/app/components/book_grid_with_column_actions.rb",
     "test/basepack_test_app/app/components/book_grid_with_custom_columns.rb",
     "test/basepack_test_app/app/components/book_grid_with_default_values.rb",
+    "test/basepack_test_app/app/components/book_grid_with_defaults.rb",
     "test/basepack_test_app/app/components/book_grid_with_extra_feedback.rb",
     "test/basepack_test_app/app/components/book_grid_with_extra_filters.rb",
     "test/basepack_test_app/app/components/book_grid_with_nested_attributes.rb",
@@ -287,21 +289,20 @@ Gem::Specification.new do |s|
     "uninstall.rb"
   ]
   s.homepage = "http://netzke.org"
-  s.post_install_message = "\n========================================================================\n\n           Thanks for installing netzke-basepack!\n\n  Don't forget to run \"rails generate netzke:baspack\" to copy necessary\n  assets to your public folder!\n\n  Netzke home page:     http://netzke.org\n  Netzke Google Groups: http://groups.google.com/group/netzke\n  Netzke tutorials:     http://blog.writelesscode.com\n\n========================================================================\n\n"
   s.require_paths = ["lib"]
   s.rubygems_version = "1.8.10"
-  s.summary = "Pre-built Rails + ExtJS components for your RIA"
+  s.summary = "Pre-built Netzke for your RIA"
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<netzke-core>, ["~> 0.7.4"])
+      s.add_runtime_dependency(%q<netzke-core>, ["~> 0.7.7"])
     else
-      s.add_dependency(%q<netzke-core>, ["~> 0.7.4"])
+      s.add_dependency(%q<netzke-core>, ["~> 0.7.7"])
     end
   else
-    s.add_dependency(%q<netzke-core>, ["~> 0.7.4"])
+    s.add_dependency(%q<netzke-core>, ["~> 0.7.7"])
   end
 end
 
