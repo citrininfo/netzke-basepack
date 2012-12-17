@@ -158,6 +158,7 @@ module Netzke
           params = args.first || {} # params are optional!
           if !config[:prohibit_read]
             {}.tap do |res|
+              params.delete(:limit) if !config[:enable_pagination]
               records = get_records(params)
               res[:data] = records.map{|r| r.netzke_array(columns(:with_meta => true))}
               res[:total] = count_records(params)  if config[:enable_pagination]
