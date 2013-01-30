@@ -86,7 +86,7 @@ module Netzke::Basepack::DataAdapters
       # addressing the n+1 query problem
       columns.each do |c|
         assoc, method = c[:name].split('__')
-        relation = relation.includes(assoc.to_sym) if method
+        relation = relation.preload(assoc.to_sym) if method
       end
 
       relation.count
