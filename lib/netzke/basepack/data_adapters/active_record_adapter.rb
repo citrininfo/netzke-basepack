@@ -1,58 +1,49 @@
 module Netzke::Basepack::DataAdapters
-  # Implementation of Netzke::Basepack::DataAdapters::AbstractAdapter
+  # Implementation of {Netzke::Basepack::DataAdapters::AbstractAdapter}
   class ActiveRecordAdapter < AbstractAdapter
     def self.for_class?(model_class)
-      model_class <= ActiveRecord::Base
+      model_class && model_class <= ActiveRecord::Base
     end
 
-    def primary_key_name
+    def new_record(params = {})
+      @model_class.new(params)
+    end
+
+    def primary_key
       @model_class.primary_key.to_s
     end
 
     def model_attributes
-      @model_class.column_names.map do |column_name|
-        {name: column_name, attr_type: @model_class.columns_hash[column_name].type}.tap do |c|
+      @_model_attributes ||= attribute_names.map do |column_name|
+        # If it's named as foreign key of some association, then it's an association column
+        assoc = @model_class.reflect_on_all_associations.detect { |a| a.foreign_key == column_name }
 
-          # If it's named as foreign key of some association, then it's an association column
-          assoc = @model_class.reflect_on_all_associations.detect { |a| a.foreign_key == c[:name] }
-
-          if assoc && !assoc.options[:polymorphic]
-            candidates = %w{name title label} << assoc.foreign_key
-            assoc_method = candidates.detect{|m| (assoc.klass.instance_methods.map(&:to_s) + assoc.klass.column_names).include?(m) }
-            c[:name] = "#{assoc.name}__#{assoc_method}"
-          end
-
-          c[:attr_type] = attr_type(c[:name])
-
-          # auto set up the default value from the column settings
-          c[:default_value] = @model_class.columns_hash[column_name].default if @model_class.columns_hash[column_name].default
+        if assoc && !assoc.options[:polymorphic]
+          candidates = %w{name title label} << assoc.klass.primary_key
+          assoc_method = candidates.detect{|m| (assoc.klass.instance_methods.map(&:to_s) + assoc.klass.column_names).include?(m) }
+          :"#{assoc.name}__#{assoc_method}"
+        else
+          column_name.to_sym
         end
+        # auto set up the default value from the column settings
+        # c[:default_value] = @model_class.columns_hash[column_name].default if @model_class.columns_hash[column_name].default
       end
     end
 
-    # WIP
     def attribute_names
       @model_class.column_names
-    end
-
-    def primary_key_attr?(a)
-      a[:name].to_s == @model_class.primary_key.to_s
     end
 
     def human_attribute_name(attr_name)
       @model_class.human_attribute_name(attr_name)
     end
 
-    def primary_key
-      @model_class.primary_key
-    end
-    ## E_WIP
-
     def attr_type(attr_name)
       association_attr?(attr_name) ? :integer : (@model_class.columns_hash[attr_name.to_s].try(:type) || :string)
     end
 
     def get_records(params, columns=[])
+      @cls = columns
       # build initial relation based on passed params
       relation = get_relation(params)
 
@@ -73,7 +64,7 @@ module Netzke::Basepack::DataAdapters
           relation = relation.send(column[:sorting_scope].to_sym, dir.to_sym)
         else
           relation = if method.nil?
-            relation.order("#{assoc} #{dir}")
+            relation.order("#{@model_class.table_name}.#{assoc} #{dir}")
           else
             assoc = @model_class.reflect_on_association(assoc.to_sym)
             relation.joins(assoc.name).order("#{assoc.klass.table_name}.#{method} #{dir}")
@@ -114,9 +105,9 @@ module Netzke::Basepack::DataAdapters
       assoc, assoc_method = assoc_and_assoc_method_for_attr(c[:name])
 
       if assoc
-        return !assoc.klass.column_names.map(&:to_sym).include?(assoc_method.to_sym)
+        return !assoc.klass.column_names.include?(assoc_method)
       else
-        return !@model_class.column_names.map(&:to_sym).include?(c[:name].to_sym)
+        return !@model_class.column_names.include?(c[:name])
       end
     end
 
@@ -163,7 +154,7 @@ module Netzke::Basepack::DataAdapters
     end
 
     def find_record(id)
-      @model_class.where(@model_class.primary_key => id).first
+      @model_class.where(primary_key => id).first
     end
 
     # Build a hash of foreign keys and the associated model
@@ -211,6 +202,10 @@ module Netzke::Basepack::DataAdapters
     #     end
     #   end
     # end
+
+    def human_attribute_name(name)
+      @model_class.human_attribute_name(name)
+    end
 
     def record_value_for_attribute(r, a, through_association = false)
       v = if a[:getter]
@@ -355,7 +350,9 @@ module Netzke::Basepack::DataAdapters
         assoc, method = v["field"].split('__')
         if method
           assoc = @model_class.reflect_on_association(assoc.to_sym)
-          field = [assoc.klass.table_name, method].join('.').to_sym
+          if assoc.klass.column_names.include? method
+            field = [assoc.klass.table_name, method].join('.').to_sym
+          end
         else
           field = assoc.to_sym
         end
@@ -364,13 +361,24 @@ module Netzke::Basepack::DataAdapters
 
         op = operator_map[v['comparison']]
 
+        col_filter = @cls.inject(nil) { |fil, col|
+          if col.is_a?(Hash) && col[:filter_with] && col[:name].to_sym == v['field'].to_sym
+            fil = col[:filter_with]
+          end
+          fil
+        }
+        if col_filter
+          res = col_filter.call(res, value, op)
+          col_filter = nil
+          next
+        end
         case v["type"]
         when "string"
           res = res.where(["#{field} like ?", "%#{value}%"])
         when "date"
           # convert value to the DB date
           value.match /(\d\d)\/(\d\d)\/(\d\d\d\d)/
-          res = res.where("#{field} #{op} ?", "#{$3}-#{$1}-#{$2}")
+          res = res.where("#{field} #{op} ?", "#{$3}-#{$1}-#{$2}".to_time)
         when "numeric"
           res = res.where(["#{field} #{op} ?", value])
         else
@@ -380,6 +388,7 @@ module Netzke::Basepack::DataAdapters
 
       res
     end
+
     protected :apply_column_filters
 
     def predicates_for_and_conditions(conditions)

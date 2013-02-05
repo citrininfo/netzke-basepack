@@ -47,10 +47,8 @@ module Netzke
         configure_locked(c)
         configure_bbar(c)
 
-        # prepend the primary key field if not present
         if data_adapter
-          c.items = [extend_item(data_adapter.primary_key_name.to_sym), *c.items] if !includes_primary_key_field?(c.items)
-          c.pri = data_adapter.primary_key_name
+          c.pri = data_adapter.primary_key
         end
 
         if !c.multi_edit
@@ -88,24 +86,18 @@ module Netzke
 
       # A hash of record data including the meta field
       def js_record_data
-        data_adapter.record_to_hash(record, fields.values).merge(:meta => meta_field).literalize_keys
+        data_adapter.record_to_hash(record, fields.values).merge(:meta => meta_field).netzke_literalize_keys
       end
 
       def record
-        @record ||= config[:record] || config[:record_id] && data_adapter && data_adapter.find_record(config[:record_id])
+        @record ||= config[:record] || config[:record_id] && data_adapter.find_record(config[:record_id])
       end
 
     protected
 
-      def includes_primary_key_field?(items)
-        !!items.detect do |item|
-          (item.is_a?(Hash) ? item[:name] : item.to_s) == data_adapter.primary_key_name
-        end
-      end
-
       def normalize_config
         config.items = items
-        @fields_from_config = {}
+        @fields_from_items = {} # will be built during execution of `super`
         super
       end
 
@@ -116,7 +108,7 @@ module Netzke
       def meta_field
         {}.tap do |res|
           assoc_values = get_association_values
-          res[:association_values] = assoc_values.literalize_keys if record && !assoc_values.empty?
+          res[:association_values] = assoc_values.netzke_literalize_keys if record && !assoc_values.empty?
         end
       end
 
