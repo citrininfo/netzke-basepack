@@ -159,7 +159,11 @@ module Netzke
 
         # Returns an array of records.
         def get_records(params)
-          params[:limit] = config[:rows_per_page] if config[:enable_pagination]
+          if config[:enable_pagination]
+            params[:limit] = config[:rows_per_page] 
+          else
+            params.delete(:limit)
+          end
           params[:scope] = config[:scope] # note, params[:scope] becomes ActiveSupport::HashWithIndifferentAccess
 
           data_adapter.get_records(params, final_columns)
