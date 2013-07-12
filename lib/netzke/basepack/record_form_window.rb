@@ -16,8 +16,8 @@ module Netzke
       end
 
       def configure(c)
-        super
         c.fbar = [:ok, :cancel]
+        super
       end
 
       js_configure do |c|
