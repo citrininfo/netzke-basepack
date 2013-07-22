@@ -29,3 +29,8 @@ left: -24px;
 .x-statusbar .x-status-busy {
     padding-left: 25px !important;
 }
+
+.x-grid-row .error-column { 
+  background-color: #ffa;
+  border-color: red;
+}
