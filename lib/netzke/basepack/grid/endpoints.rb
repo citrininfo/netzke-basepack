@@ -32,33 +32,8 @@ module Netzke
             end
           end
 
-          endpoint :resize_column do |params, this|
-            raise "Called resize_column endpoint while not configured to do so" if !config[:persistence]
-
-            current_columns_order = state[:columns_order] || initial_columns_order
-            current_columns_order[normalize_index(params[:index].to_i)][:width] = params[:size].to_i
-            state[:columns_order] = current_columns_order
-          end
-
-          endpoint :move_column do |params, this|
-            raise "Called move_column endpoint while not configured to do so" if !config[:persistence]
-
-            remove_from = normalize_index(params[:old_index].to_i)
-            insert_to = normalize_index(params[:new_index].to_i)
-
-            current_columns_order = state[:columns_order] || initial_columns_order
-
-            column_to_move = current_columns_order.delete_at(remove_from)
-            current_columns_order.insert(insert_to, column_to_move)
-
-            state[:columns_order] = current_columns_order
-          end
-
-          endpoint :hide_column do |params, this|
-            raise "Called hide_column endpoint while not configured to do so" if !config[:persistence]
-            current_columns_order = state[:columns_order] || initial_columns_order
-            current_columns_order[normalize_index(params[:index].to_i)][:hidden] = params[:hidden]
-            state[:columns_order] = current_columns_order
+          endpoint :server_save_columns do |cols, this|
+            state[:columns_order] = cols
           end
 
           # Returns options for a combobox
@@ -108,15 +83,20 @@ module Netzke
             this.netzke_feedback(errors)
           end
 
-          # The following two look a bit hackish, but serve to invoke on_data_changed when a form gets successfully submitted
+          # The following two look a bit hackish, but serve to invoke on_data_changed when a form gets successfully
+          # submitted
           endpoint :add_window__add_form__netzke_submit do |params, this|
-            this.merge!(component_instance(:add_window__add_form).invoke_endpoint(:netzke_submit, params))
+            this.merge!(component_instance(:add_window).
+                        component_instance(:add_form).
+                        invoke_endpoint(:netzke_submit, params))
             on_data_changed if this.set_form_values.present?
             this.delete(:set_form_values)
           end
 
           endpoint :edit_window__edit_form__netzke_submit do |params, this|
-            this.merge!(component_instance(:edit_window__edit_form).invoke_endpoint(:netzke_submit, params))
+            this.merge!(component_instance(:edit_window).
+                        component_instance(:edit_form).
+                        invoke_endpoint(:netzke_submit, params))
             on_data_changed if this.set_form_values.present?
             this.delete(:set_form_values)
           end
@@ -132,20 +112,6 @@ module Netzke
           else
             this.netzke_feedback I18n.t("netzke.basepack.grid.cannot_#{op}")
           end
-        end
-
-      protected
-
-        # Given an index of a column among enabled (non-excluded) columns, provides the index (position) in the table
-        def normalize_index(index)
-          norm_index = 0
-          index.times do
-            while true do
-              norm_index += 1
-              break unless final_columns[norm_index][:included] == false
-            end
-          end
-          norm_index
         end
       end
     end

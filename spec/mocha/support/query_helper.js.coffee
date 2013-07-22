@@ -15,10 +15,20 @@ Ext.apply window,
     Ext.DomQuery.select("div.x-panel-body:contains(" + text + ")")[0] ||
       'panel with content ' + text
 
-  button: (text) ->
-    Ext.ComponentQuery.query("button{isVisible(true)}[text='"+text+"']")[0] ||
-      Ext.DomQuery.select("[data-qtip=#{text}]")[0] ||
-      "button " + text
+  button: (text, params) ->
+    params ?= {}
+    context = params.within
+
+    query = "button{isVisible(true)}[text='"+text+"']"
+    if context
+      context.query(query)[0] || 'button ' + text
+    else
+      Ext.ComponentQuery.query(query)[0] ||
+        Ext.DomQuery.select("[data-qtip=#{text}]")[0] ||
+        "button " + text
+
+  panel: (name, params) ->
+    Ext.getCmp(name)
 
   tool: (type) ->
     Ext.ComponentQuery.query("tool{isVisible(true)}[type='"+type+"']")[0] ||
@@ -27,6 +37,10 @@ Ext.apply window,
   component: (id) ->
     Ext.ComponentQuery.query("panel{isVisible(true)}[id='"+id+"']")[0] ||
       'component ' + id
+
+  combobox: (name) ->
+    Ext.ComponentQuery.query("combo{isVisible(true)}[name='"+name+"']")[0] ||
+      'combobox ' + name
 
   icon: (tooltip) ->
     Ext.DomQuery.select('img[data-qtip="'+tooltip+'"]')[0] || 'icon ' + tooltip

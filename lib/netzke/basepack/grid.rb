@@ -90,6 +90,10 @@ module Netzke
     #
     #     data_store: {auto_load: false}
     #
+    #   To enable (multi) sorting, do:
+    #
+    #     data_store: {sorters: [:title, :author__first_name]}
+    #
     # [prohibit_create]
     #
     #   when set to +true+ prevents user from adding data
@@ -349,7 +353,6 @@ module Netzke
         # JavaScript includes
         ex = Netzke::Core.ext_path.join("examples")
 
-        c.require ex.join("ux/CheckColumn.js")
         c.require :extensions
 
         # Includes for column filters

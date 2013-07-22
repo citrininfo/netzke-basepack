@@ -1,6 +1,7 @@
 # 0.9.0 - WIP
 * new
   * GridLiveSearch plugin - implements flexible "live" search on any grid
+  * Implement multi-sorting support in grids
 * internal changes
   * Endpoints renamed in Grid:
     * `post_data` => `server_create` and `server_update`
@@ -13,6 +14,7 @@
   * datetime field in forms respects `read_only` now
   * Re-enable piggybacking commands to the client from within Grid's `get_data` endpoint
   * Searching and filtering in grid by date/datetime columns is fixed
+  * Unchecked checkbox in form gets saved as false now (not nil)
 * improvements
   * Raise a meaningful exception when a model doesn't have a primary key, which is required by Grid
   * Do not let rows in grid disappear after an attempt to create invalid records

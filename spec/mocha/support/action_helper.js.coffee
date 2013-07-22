@@ -10,13 +10,13 @@ Ext.apply window,
     i = 0
     id = setInterval ->
       i += 1
-      if i >= 100
+      if i >= 100 || Netzke.ajaxCount == 0
         clearInterval(id)
         callback.call()
 
       # this way we ensure another 20ms cycle before we issue a callback
-      i = 100 if Netzke.ajaxCount == 0
-    , 20
+      # callback.call() if Netzke.ajaxCount == 0
+    , 100
 
   click: (cmp) ->
     if Ext.isString(cmp)
@@ -35,3 +35,32 @@ Ext.apply window,
   # Closes the first found window
   closeWindow: ->
     Ext.ComponentQuery.query("window[hidden=false]")[0].close()
+
+  expandCombo: (name)->
+    combo = Ext.ComponentQuery.query('combobox[name='+name+']')[0]
+    combo.onTriggerClick()
+
+  select: (value, params, callback) ->
+    params ?= params
+    combo = params.in
+    if combo.isExpanded
+      combo.setValue combo.findRecordByDisplay value
+      combo.collapse()
+    else
+      combo.onTriggerClick()
+      if callback
+        wait ->
+          rec = combo.findRecordByDisplay value
+          combo.select rec
+          combo.fireEvent('select', combo, rec )
+          combo.collapse()
+          callback.call()
+      else
+        rec = combo.findRecordByDisplay value
+        combo.select rec
+        combo.fireEvent('select', combo, rec )
+        combo.collapse()
+
+  fillIn: (name, value) ->
+    field = Ext.ComponentQuery.query('textfield[name="'+name+'"]')[0]
+    field.setValue(value)
