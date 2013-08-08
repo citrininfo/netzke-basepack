@@ -308,7 +308,7 @@ module Netzke::Basepack::DataAdapters
         cannot_use_procs = query.size > 1
 
         and_predicates = query.map do |and_query|
-          and_query.each do |q|
+          and_query.dup.each do |q|
             if prok = q.delete(:proc)
               raise "Cannot use Proc conditions in OR queries" if cannot_use_procs
               relation = prok.call(relation, q[:value], q[:operator])
@@ -326,7 +326,7 @@ module Netzke::Basepack::DataAdapters
 
       if params[:filters]
         and_query = params[:filters]
-        and_query.each do |q|
+        and_query.dup.each do |q|
           if prok = q.delete(:proc)
             relation = prok.call(relation, q[:value], q[:operator])
             and_query.delete(q)
