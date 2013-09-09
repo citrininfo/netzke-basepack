@@ -131,7 +131,11 @@ module Netzke::Basepack::DataAdapters
         relation = assoc.klass.scoped
         relation = relation.extend_with(attr[:scope]) if attr[:scope]
 
-        if assoc.klass.column_names.include?(assoc_method)
+        if attr[:assoc_filter]
+          assoc_arel_table = assoc.klass.arel_table
+          relation = attr[:assoc_filter].call(relation, query)
+          relation.all.map{ |r| [r.id, r.send(assoc_method)] }
+        elsif assoc.klass.column_names.include?(assoc_method)
           # apply query
           assoc_arel_table = assoc.klass.arel_table
 
