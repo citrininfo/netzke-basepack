@@ -8,7 +8,8 @@ module Netzke
           {}.tap do |res|
             records = get_records(params)
             res[:data] = records.map{|r| data_adapter.record_to_array(r, final_columns(:with_meta => true))}
-            res[:total] = count_records(params)  if config[:enable_pagination]
+            res[:total] = count_records(params)  if config[:enable_pagination] || config[:enable_infinite_scroll]
+
           end
         end
 
@@ -70,7 +71,7 @@ module Netzke
           params[:query] = normalize_query(params[:query]) if params[:query].present?
           if config[:enable_pagination]
             params[:limit] = config[:rows_per_page] 
-          else
+          elsif !config[:enable_infinite_scroll]
             params.delete(:limit)
           end
           params[:scope] = config[:scope] # note, params[:scope] becomes ActiveSupport::HashWithIndifferentAccess
