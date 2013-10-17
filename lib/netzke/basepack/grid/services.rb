@@ -132,7 +132,7 @@ module Netzke
           if record.save
             {record: data_adapter.record_to_array(record, final_columns(:with_meta => true))}
           else
-            {error: record.errors.to_a}
+            {error: record.errors.messages}
           end
         end
 
