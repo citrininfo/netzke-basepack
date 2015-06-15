@@ -418,6 +418,13 @@ module Netzke::Basepack::DataAdapters
   protected
 
     # addressing the n+1 query problem
+    # options:
+    # * force_preload: If the automatic associations should be preloaded instead of included (default: false)
+    # * force_eager_load: If the automatic associations should be eager-loaded instead of included (default: false)
+    # * enable_auto_include_associations: If the associations (eg. "bill" in bill__bill_date) should be loaded (default: true)
+    # * preload_associations: Associations that will be preloaded additionally (default: [])
+    # * eager_load_associations: Associations that will be eager-loaded additionally (default: [])
+    # * includes_associations: Associations that will be included additionally (default: [])
     def add_associations(relation, params, columns)
       preload_associations = params[:preload_associations] || []
       eager_load_associations = params[:eager_load_associations] || []

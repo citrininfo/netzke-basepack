@@ -76,6 +76,12 @@ module Netzke
           end
           params[:scope] = config[:scope] # note, params[:scope] becomes ActiveSupport::HashWithIndifferentAccess
 
+          [
+            :force_preload, :force_eager_load,
+            :preload_associations, :eager_load_associations, :includes_associations,
+            :enable_auto_include_associations,
+          ].each {|k| params[k] = config[k] }
+
           data_adapter.get_records(params, final_columns)
         end
 
