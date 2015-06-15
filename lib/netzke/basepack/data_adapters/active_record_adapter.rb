@@ -46,12 +46,7 @@ module Netzke::Basepack::DataAdapters
       @cls = columns
       # build initial relation based on passed params
       relation = get_relation(params)
-
-      # addressing the n+1 query problem
-      columns.each do |c|
-        assoc, method = c[:name].split('__')
-        relation = relation.includes(assoc.to_sym) if method
-      end
+      relation = add_associations(relation, params, columns)
 
       # apply sorting if needed
       if params[:sort] && sort_params = params[:sort].first
@@ -83,12 +78,7 @@ module Netzke::Basepack::DataAdapters
     def count_records(params, columns=[])
       # build initial relation based on passed params
       relation = get_relation(params)
-
-      # addressing the n+1 query problem
-      columns.each do |c|
-        assoc, method = c[:name].split('__')
-        relation = relation.includes(assoc.to_sym) if method
-      end
+      relation = add_associations(relation, params, columns)
 
       relation.count
     end
@@ -418,5 +408,32 @@ module Netzke::Basepack::DataAdapters
       @model_class.accessible_attributes(role).empty? ? !@model_class.protected_attributes(role).include?(attr_name.to_s) : @model_class.accessible_attributes(role).include?(attr_name.to_s)
     end
     protected :attribute_mass_assignable?
+
+    # addressing the n+1 query problem
+    def add_associations(relation, params, columns)
+      preload_associations = params[:preload_associations] || []
+      eager_load_associations = params[:eager_load_associations] || []
+      includes_associations = params[:includes_associations] || []
+
+      if params[:enable_auto_include_associations] != false
+        col_associations = columns.collect do |c|
+          assoc, method = c[:name].split('__')
+          method ? assoc.to_sym : nil
+        end
+        if params[:force_preload]
+          preload_associations += col_associations
+        elsif params[:force_eager_load]
+          eager_load_associations += col_associations
+        else
+          includes_associations += col_associations
+        end
+      end
+
+      preload_associations.each {|a| relation = relation.preload(a) unless a.blank? }
+      eager_load_associations.each {|a| relation = relation.eager_load(a) unless a.blank? }
+      includes_associations.each {|a| relation = relation.includes(a) unless a.blank? }
+      relation
+    end
+    protected :add_associations
   end
 end
