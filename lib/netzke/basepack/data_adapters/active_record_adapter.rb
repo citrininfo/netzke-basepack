@@ -91,7 +91,8 @@ module Netzke::Basepack::DataAdapters
       relation = @relation || get_relation(params)
       relation = add_associations(relation, params, columns)
 
-      relation.count
+      count = relation.count
+      count.is_a?(Hash) ? count.count : count
     end
 
     def get_assoc_property_type assoc_name, prop_name
