@@ -61,7 +61,9 @@ module Netzke
 
       def configure_date_field!
         self.submit_format = "Y-m-d"
-        self.format ||= I18n.t("date", scope: 'netzke.formats', default: "Y-m-d")
+        if self.format.nil?
+          self.format = I18n.t("date", scope: 'netzke.formats', default: "Y-m-d")
+        end
       end
     end
   end
