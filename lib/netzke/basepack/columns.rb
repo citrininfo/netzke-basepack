@@ -127,7 +127,7 @@ module Netzke
       # When overriding this method, keep in mind that the fields inside the layout must be expanded (each field represented by a hash, not just a symbol)
       def default_fields_for_forms
         columns_taken_over_to_forms.map do |c|
-          (c[:editor] || {}).tap do |f|
+          (c[:editor] || {}).dup.tap do |f|
             %w(name read_only setter getter scope format).each do |key|
               f[key.to_sym] = c[key.to_sym]
             end
