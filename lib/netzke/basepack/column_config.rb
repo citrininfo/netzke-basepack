@@ -47,7 +47,8 @@ module Netzke
 
       def xtype_for_attr_type(type)
         { :boolean  => :checkcolumn,
-          :date     => :datecolumn
+          :date     => :datecolumn,
+          :time     => :datecolumn
         }[type]
       end
 
@@ -91,6 +92,7 @@ module Netzke
           :boolean => :checkbox,
           :date => :datefield,
           :datetime => :xdatetime,
+          :time => :timefield,
           :text => :textarea,
           :string => :textfield
         }[type] || :textfield

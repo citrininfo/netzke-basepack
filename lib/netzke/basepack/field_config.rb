@@ -47,6 +47,7 @@ module Netzke
           boolean:    :checkboxfield,
           date:       :datefield,
           datetime:   :xdatetime,
+          time:       :timefield,
           text:       :textarea,
           json:       :jsonfield,
           string:     :textfield
