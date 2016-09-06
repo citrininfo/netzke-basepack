@@ -46,6 +46,7 @@ module Netzke::Basepack::DataAdapters
     def get_records(params, columns=[])
       # build initial relation based on passed params
       relation = get_relation(params)
+
       relation = add_associations(relation, params, columns)
 
       # apply sorting if needed
@@ -89,9 +90,8 @@ module Netzke::Basepack::DataAdapters
     def count_records(params, columns=[])
       # if get_relation was called before (e.g. through get_records), don't call it again, just use its latest result
       relation = @relation || get_relation(params)
-      relation = add_associations(relation, params, columns)
 
-      count = relation.count
+      count = relation.count(:all)
       count.is_a?(Hash) ? count.count : count
     end
 
@@ -119,14 +119,10 @@ module Netzke::Basepack::DataAdapters
       if assoc
         # Options for an asssociation attribute
 
-        relation = assoc.klass.scoped
-        relation = relation.extend_with(attr[:scope]) if attr[:scope]
+        relation = assoc.klass.all
+        relation = extend_relation_with_scope(relation, attr[:scope]) if attr[:scope]
 
-        if attr[:assoc_filter]
-          assoc_arel_table = assoc.klass.arel_table
-          relation = attr[:assoc_filter].call(relation, query)
-          relation.all.map{ |r| [r.id, r.send(assoc_method)] }
-        elsif assoc.klass.column_names.include?(assoc_method)
+        if assoc.klass.column_names.include?(assoc_method)
           # apply query
           assoc_arel_table = assoc.klass.arel_table
 
@@ -166,7 +162,7 @@ module Netzke::Basepack::DataAdapters
     # * scope - will only return a record if it falls into the provided scope
     def find_record(id, options = {})
       scope = options[:scope] || {}
-      @model_class.where(primary_key => id).extend_with(scope).first
+      extend_relation_with_scope(@model_class.where(primary_key => id),scope).first
     end
 
     # Build a hash of foreign keys and the associated model
@@ -233,6 +229,10 @@ module Netzke::Basepack::DataAdapters
         else
           r.send("#{assoc.options[:foreign_key] || assoc.name.to_s.foreign_key}")
         end
+      # the composite_primary_keys gem produces [Key1,Key2...] and [Value1,Value2...]
+      # on primary_key and id requests. Basepack::AttrConfig converts the keys-array to an String.
+      elsif r.class.primary_key.try(:to_s) == a[:name]
+        r.id # return 'val1,val2...' on 'key1,key2...' composite_primary_keys
       end
 
       # a work-around for to_json not taking the current timezone into account when serializing ActiveSupport::TimeWithZone
@@ -246,7 +246,7 @@ module Netzke::Basepack::DataAdapters
 
       if a[:setter]
         a[:setter].call(r, v)
-      elsif r.respond_to?("#{a[:name]}=") && attribute_mass_assignable?(a[:name], role)
+      elsif r.respond_to?("#{a[:name]}=")
         r.send("#{a[:name]}=", v)
       elsif association_attr?(a)
         split = a[:name].to_s.split(/\.|__/)
@@ -274,7 +274,7 @@ module Netzke::Basepack::DataAdapters
 
                 # set the foreign key to the passed value
                 # not that if a negative value is passed, we reset the association (set it to nil)
-                r.send("#{assoc.foreign_key}=", v.to_i < 0 ? nil : v) if attribute_mass_assignable?(assoc.foreign_key, role)
+                r.send("#{assoc.foreign_key}=", v.to_i < 0 ? nil : v) # if attribute_mass_assignable?(assoc.foreign_key, role)
               end
             else
               logger.warn "Netzke: Association #{assoc} is not known for class #{@data_class}"
@@ -295,7 +295,7 @@ module Netzke::Basepack::DataAdapters
 
     # An ActiveRecord::Relation instance encapsulating all the necessary conditions.
     def get_relation(params = {})
-      relation = @model_class.scoped
+      relation = @model_class.all
 
       query = params[:query]
 
@@ -303,7 +303,7 @@ module Netzke::Basepack::DataAdapters
         cannot_use_procs = query.size > 1
 
         and_predicates = query.map do |and_query|
-          and_query.dup.each do |q|
+          and_query.each do |q|
             if prok = q.delete(:proc)
               raise "Cannot use Proc conditions in OR queries" if cannot_use_procs
               relation = prok.call(relation, q[:value], q[:operator])
@@ -321,7 +321,7 @@ module Netzke::Basepack::DataAdapters
 
       if params[:filters]
         and_query = params[:filters]
-        and_query.dup.each do |q|
+        and_query.each do |q|
           if prok = q.delete(:proc)
             relation = prok.call(relation, q[:value], q[:operator])
             and_query.delete(q)
@@ -332,7 +332,7 @@ module Netzke::Basepack::DataAdapters
         relation = relation.where(predicates_for_and_conditions(and_query))
       end
 
-      relation = relation.extend_with(params[:scope]) if params[:scope]
+      relation = extend_relation_with_scope(relation, params[:scope]) if params[:scope]
 
       @relation = relation
     end
@@ -456,5 +456,25 @@ module Netzke::Basepack::DataAdapters
     def logger
       Netzke::Base.logger
     end
+    def extend_relation_with_scope(relation, scope)
+      case scope
+      when Symbol # model's scope
+        relation.send scope
+      when String 
+        relation.where scope
+      when Array # SQL query or SQL query with params (e.g. ["created_at < ?", 1.day.ago])
+        q = scope.shift
+        scope.empty? ? relation.where(q) : relation.where([q, scope])
+      when Hash  # conditions hash
+        relation.where(scope)
+      when ActiveSupport::HashWithIndifferentAccess # conditions hash
+        relation.where(scope)
+      when Proc   # receives a relation, must return a relation
+        scope.call(relation)
+      else
+        raise ArgumentError, "Wrong parameter type for ActiveRecord::Relation#extend_with"
+      end
+    end
   end
+
 end
